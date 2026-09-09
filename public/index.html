@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Express CEC</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <h1>Express CEC</h1>
+
+    <h2>Manual Trigger</h2>
+    <button onclick="trigger('POWER_ON')">Power On</button>
+    <button onclick="trigger('STANDBY')">Standby</button>
+    <div id="scenesContainer"></div>
+
+    <div class="row" style="margin-top: 1rem">
+      <input
+        id="rawCommand"
+        placeholder="Custom command, e.g. RAW:--to 0 --active-source"
+      />
+      <button onclick="triggerRaw()">Send</button>
+    </div>
+    <div class="hint">
+      Known built-in commands: POWER_ON, STANDBY. Anything else can be sent as
+      RAW:&lt;cec-ctl args&gt;.
+    </div>
+
+    <h2>Activity Log</h2>
+    <div id="log">(nothing yet)</div>
+
+    <h2>
+      Settings <span id="tokenBadge" class="badge unset">no token set</span>
+    </h2>
+
+    <label
+      >Admin token
+      <span class="hint"
+        >(required to save settings once one is set)</span
+      ></label
+    >
+    <input id="adminToken" type="password" placeholder="Current admin token" />
+
+    <label>CEC device path</label>
+    <input id="cecDevice" placeholder="/dev/cec0" />
+
+    <label>CEC adapter role</label>
+    <select id="cecAdapterType">
+      <option value="playback">playback</option>
+      <option value="tv">tv</option>
+      <option value="record">record</option>
+      <option value="tuner">tuner</option>
+      <option value="audio">audio</option>
+    </select>
+
+    <label
+      >Target logical address
+      <span class="hint">(0 = TV, per the CEC spec)</span></label
+    >
+    <input id="targetLogicalAddress" type="number" min="0" max="15" />
+
+    <label
+      >Web UI / API port
+      <span class="hint">(requires service restart to take effect)</span></label
+    >
+    <input id="webPort" type="number" min="1" max="65535" />
+
+    <label
+      >Set new admin token
+      <span class="hint">(leave blank to keep current one)</span></label
+    >
+    <input id="newAdminToken" type="text" placeholder="New admin token" />
+
+    <button onclick="saveSettings()">Save Settings</button>
+
+    <script>
+      let currentConfig = {};
+
+      function log(line) {
+        const el = document.getElementById("log");
+        const ts = new Date().toLocaleTimeString();
+        el.textContent =
+          (el.textContent === "(nothing yet)" ? "" : el.textContent + "\n") +
+          `[${ts}] ${line}`;
+        el.scrollTop = el.scrollHeight;
+      }
+
+      async function trigger(command) {
+        log(`-> ${command}`);
+        try {
+          const res = await fetch("/api/trigger", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ command }),
+          });
+          const data = await res.json();
+          log(
+            data.ok
+              ? `OK (exit ${data.code})`
+              : `ERROR: ${data.stderr || data.error}`,
+          );
+        } catch (err) {
+          log(`REQUEST FAILED: ${err.message}`);
+        }
+      }
+
+      function triggerRaw() {
+        const val = document.getElementById("rawCommand").value.trim();
+        if (val) trigger(val);
+      }
+
+      function renderScenes(scenes) {
+        const container = document.getElementById("scenesContainer");
+        container.innerHTML = "";
+        (scenes || []).forEach((scene) => {
+          const btn = document.createElement("button");
+          btn.className = "scene-btn";
+          btn.textContent = scene.name;
+          btn.onclick = () => trigger(scene.command);
+          container.appendChild(btn);
+        });
+      }
+
+      async function loadConfig() {
+        const res = await fetch("/api/config");
+        const data = await res.json();
+        currentConfig = data;
+
+        document.getElementById("cecDevice").value = data.cecDevice ?? "";
+        document.getElementById("cecAdapterType").value =
+          data.cecAdapterType ?? "playback";
+        document.getElementById("targetLogicalAddress").value =
+          data.targetLogicalAddress ?? 0;
+        document.getElementById("webPort").value = data.webPort ?? "";
+
+        const badge = document.getElementById("tokenBadge");
+        badge.textContent = data.hasAdminToken ? "token set" : "no token set";
+        badge.className = "badge " + (data.hasAdminToken ? "set" : "unset");
+
+        renderScenes(data.scenes);
+      }
+
+      async function saveSettings() {
+        const body = {
+          cecDevice: document.getElementById("cecDevice").value,
+          cecAdapterType: document.getElementById("cecAdapterType").value,
+          targetLogicalAddress: Number(
+            document.getElementById("targetLogicalAddress").value,
+          ),
+          webPort: Number(document.getElementById("webPort").value),
+        };
+        const newToken = document.getElementById("newAdminToken").value.trim();
+        if (newToken) body.adminToken = newToken;
+
+        try {
+          const res = await fetch("/api/config", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-admin-token": document.getElementById("adminToken").value,
+            },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json();
+          if (!data.ok) {
+            log(`SETTINGS SAVE FAILED: ${data.error}`);
+            return;
+          }
+          log(
+            "Settings saved." +
+              (data.restartNeeded
+                ? " Restart the service for port changes to take effect."
+                : ""),
+          );
+          document.getElementById("newAdminToken").value = "";
+          await loadConfig();
+        } catch (err) {
+          log(`SETTINGS SAVE FAILED: ${err.message}`);
+        }
+      }
+
+      loadConfig();
+    </script>
+  </body>
+</html>

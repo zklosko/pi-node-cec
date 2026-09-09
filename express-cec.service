@@ -1,0 +1,20 @@
+[Unit]
+Description=Express CEC
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/pi/express-cec
+ExecStart=/usr/bin/node src/server.js
+Restart=on-failure
+RestartSec=3
+# The service needs to run as a user with permission to open /dev/cec0.
+# On stock Raspberry Pi OS the "pi" user is normally in the "video" group,
+# which usually owns /dev/cec0 -- check with `ls -l /dev/cec0` and adjust
+# User=/Group= below (or add the user to that group) if permission is denied.
+User=pi
+Group=video
+
+[Install]
+WantedBy=multi-user.target
