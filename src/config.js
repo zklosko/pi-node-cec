@@ -1,3 +1,14 @@
+/**
+ * | Field                  | Meaning                                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------------------------ |
+| `port`                 | HTTP listen port (restart required to change)                                                    |
+| `cecDevice`            | CEC device node, e.g. `/dev/cec0`                                                                |
+| `cecAdapterType`       | Logical device role this Pi claims on the CEC bus (`playback`, `tv`, `record`, `tuner`, `audio`) |
+| `targetLogicalAddress` | CEC logical address commands are sent to (0 = TV)                                                |
+| `adminToken`           | Shared secret required to change settings; empty = unset (first save bootstraps one)             |
+| `scenes`               | Array of `{ name, command }` objects shown as extra buttons in the web UI                        |
+ */
+
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
