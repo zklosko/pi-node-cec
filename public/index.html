@@ -12,6 +12,9 @@
     <h2>Manual Trigger</h2>
     <button onclick="trigger('POWER_ON')">Power On</button>
     <button onclick="trigger('STANDBY')">Standby</button>
+    <button onclick="trigger('INPUT_1')">Input 1</button>
+    <button onclick="trigger('INPUT_2')">Input 2</button>
+    <button onclick="trigger('INPUT_3')">Input 3</button>
     <div id="scenesContainer"></div>
 
     <div class="row" style="margin-top: 1rem">
@@ -22,7 +25,7 @@
       <button onclick="triggerRaw()">Send</button>
     </div>
     <div class="hint">
-      Known built-in commands: POWER_ON, STANDBY. Anything else can be sent as
+      Known built-in commands: POWER_ON, STANDBY, INPUT_1, INPUT_2, INPUT_3. Anything else can be sent as
       RAW:&lt;cec-ctl args&gt;.
     </div>
 
