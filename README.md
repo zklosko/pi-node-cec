@@ -7,8 +7,9 @@ A small Node.js service exposing a REST API that executes CEC commands using the
 Requires Node 22+, `v4l-utils`, and the current user must have permission to open `/dev/cec0` (add user to the `video` group). Designed for Raspberry Pi, but can work on other Linux devices as well.
 
 ```bash
-npm install --omit=dev
-node run start
+npm install
+npm run build
+node dist/server.js
 ```
 
 On first run it creates `config.json` in the project's directory for settings persistance and generates an admin token required to change settings in the Web UI.

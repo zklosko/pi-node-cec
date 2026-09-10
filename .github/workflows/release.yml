@@ -1,0 +1,25 @@
+# .github/workflows/release.yml
+name: Release
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run build
+      - name: Package release
+        run: |
+          mkdir -p release
+          cp -r dist public package.json package-lock.json cec-udp-bridge.service release/
+          tar -czf cec-bridge.tar.gz -C release .
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: cec-bridge.tar.gz

@@ -9,13 +9,17 @@
 | `scenes`               | Array of `{ name, command }` objects shown as extra buttons in the web UI                        |
  */
 
-import fs from "node:fs";
-import path from "node:path";
+import Conf from "conf";
 import crypto from "node:crypto";
 
-const __dirname = import.meta.dirname;
-const CONFIG_PATH =
-  process.env.CEC_BRIDGE_CONFIG || path.join(__dirname, "..", "config.json");
+export type SettingsConfig = {
+  port: number;
+  cecDevice: string;
+  cecAdapterType: string;
+  targetLogicalAddress: number;
+  adminToken?: string;
+  scenes?: { name: string; command: string }[];
+};
 
 const DEFAULTS = {
   port: 8080,
@@ -26,44 +30,26 @@ const DEFAULTS = {
   scenes: [],
 };
 
-function readConfig() {
-  const raw = fs.readFileSync(CONFIG_PATH, "utf8");
-  return JSON.parse(raw);
-}
+const config = new Conf<SettingsConfig>({
+  projectName: "rest-cec",
+  defaults: DEFAULTS,
+});
 
-function writeConfig(config) {
-  const dir = path.dirname(CONFIG_PATH);
-  const tmp = path.join(
-    dir,
-    `.${path.basename(CONFIG_PATH)}.tmp-${process.pid}-${Date.now()}`,
-  );
-  fs.writeFileSync(tmp, JSON.stringify(config, null, 2), "utf8");
-  fs.renameSync(tmp, CONFIG_PATH);
-}
-
-function ensureConfigExists() {
-  if (fs.existsSync(CONFIG_PATH)) return;
-  const initial = {
-    ...DEFAULTS,
-    adminToken: crypto.randomBytes(9).toString("base64url"),
-  };
-  writeConfig(initial);
+function makeAdminToken() {
+  const newToken = crypto.randomBytes(9).toString("base64url");
+  config.set("adminToken", newToken);
   console.log(
-    `[config] First run: created ${CONFIG_PATH}\n` +
-      `[config] Generated admin token: ${initial.adminToken}\n` +
+    `[config] Generated admin token: ${newToken}\n` +
       `[config] You'll need this to change settings in the web UI.`,
   );
 }
 
 export function loadConfig() {
-  ensureConfigExists();
-  const onDisk = readConfig();
-  return { ...DEFAULTS, ...onDisk };
+  if (!config.get("adminToken")) makeAdminToken();
+  return config.store;
 }
 
-export function saveConfig(newConfig) {
-  const current = loadConfig();
-  const next = { ...current, ...newConfig };
-  writeConfig(next);
-  return next;
+export function saveConfig(newConfig: Partial<SettingsConfig>) {
+  config.set(newConfig);
+  return config.store;
 }

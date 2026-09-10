@@ -1,9 +1,18 @@
 import { execFile } from "node:child_process";
-import { COMMANDS } from "./commands";
+import { COMMANDS } from "./commands.js";
+import type { SettingsConfig } from "./config.js";
 
-const CEC_CTL_BIN = process.env.CEC_CTL_BIN || "cec-ctl";
+const CEC_CTL_BIN: string = process.env.CEC_CTL_BIN || "cec-ctl";
 
-export function runCecBin(args) {
+type CecResult = {
+  ok: boolean;
+  code: number | string | null;
+  stdout: string;
+  stderr: string;
+  args: string[];
+};
+
+export function runCecBin(args: string[]): Promise<CecResult> {
   return new Promise((resolve, reject) => {
     execFile(CEC_CTL_BIN, args, { timeout: 5000 }, (err, stdout, stderr) => {
       if (err && err.code == undefined && err.errno) {
@@ -12,7 +21,7 @@ export function runCecBin(args) {
       }
       resolve({
         ok: !err,
-        code: err ? err.code : 0,
+        code: err ? (err.code ?? null) : 0,
         stdout: stdout || "",
         stderr: stderr || "",
         args,
@@ -21,7 +30,7 @@ export function runCecBin(args) {
   });
 }
 
-export async function claimCecAdapter(config) {
+export async function claimCecAdapter(config: SettingsConfig) {
   const flag = `--${config.cecAdapterType}`;
   try {
     const result = await runCecBin(["-d", config.cecDevice, flag]);
@@ -41,15 +50,16 @@ export async function claimCecAdapter(config) {
     );
     return result;
   } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
     console.error(
-      `[cec] Could not run cec-ctl at all (${CEC_CTL_BIN}): ${e.message}\n` +
+      `[cec] Could not run cec-ctl at all (${CEC_CTL_BIN}): ${message}\n` +
         `[cec] Check that v4l-utils is installed and ${config.cecDevice} exists.`,
     );
     throw e;
   }
 }
 
-export async function send(rawCommand, config) {
+export async function send(rawCommand: string, config: SettingsConfig) {
   const command = (rawCommand || "").trim();
   if (!command) {
     return {

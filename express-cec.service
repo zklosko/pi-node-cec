@@ -6,7 +6,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 WorkingDirectory=/home/pi/express-cec
-ExecStart=/usr/bin/node src/server.js
+ExecStart=/usr/bin/node dist/server.js
 Restart=on-failure
 RestartSec=3
 # The service needs to run as a user with permission to open /dev/cec0.

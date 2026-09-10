@@ -1,19 +1,26 @@
-export const COMMANDS = {
-  POWER_ON: (config) => [
+import type { SettingsConfig } from "./config.js";
+
+type CommandBuilder = (config: SettingsConfig) => string[];
+
+const powerOff: CommandBuilder = (config) => [
+  "-d",
+  config.cecDevice,
+  "--to",
+  String(config.targetLogicalAddress),
+  "--standby",
+];
+
+export const COMMANDS: Record<string, CommandBuilder> = {
+  POWER_ON: (config: SettingsConfig) => [
     "-d",
     config.cecDevice,
     "--to",
     String(config.targetLogicalAddress),
     "--image-view-on",
   ],
-  POWER_OFF: (config) => [
-    "-d",
-    config.cecDevice,
-    "--to",
-    String(config.targetLogicalAddress),
-    "--standby",
-  ],
-  INPUT_1: (config) => [
+  POWER_OFF: powerOff,
+  STANDBY: powerOff,
+  INPUT_1: (config: SettingsConfig) => [
     "-d",
     config.cecDevice,
     "--to",
@@ -21,7 +28,7 @@ export const COMMANDS = {
     "--active-source",
     "phys-addr=1.0.0.0",
   ],
-  INPUT_2: (config) => [
+  INPUT_2: (config: SettingsConfig) => [
     "-d",
     config.cecDevice,
     "--to",
@@ -29,7 +36,7 @@ export const COMMANDS = {
     "--active-source",
     "phys-addr=2.0.0.0",
   ],
-  INPUT_3: (config) => [
+  INPUT_3: (config: SettingsConfig) => [
     "-d",
     config.cecDevice,
     "--to",
@@ -38,4 +45,3 @@ export const COMMANDS = {
     "phys-addr=3.0.0.0",
   ],
 };
-COMMANDS.STANDBY = COMMANDS.POWER_OFF;
