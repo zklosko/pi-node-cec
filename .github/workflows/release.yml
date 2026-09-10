@@ -18,7 +18,7 @@ jobs:
       - name: Package release
         run: |
           mkdir -p release
-          cp -r dist public package.json package-lock.json cec-udp-bridge.service release/
+          cp -r dist public package.json package-lock.json rest-cec.service release/
           tar -czf cec-bridge.tar.gz -C release .
       - uses: softprops/action-gh-release@v2
         with:
